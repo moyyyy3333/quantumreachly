@@ -214,9 +214,12 @@ async def stripe_webhook(request: Request):
 def get_config():
     return {"stripe_publishable_key": STRIPE_PUBLISHABLE_KEY}
 
+class ResearchStartBody(BaseModel):
+    site_url: str
+
 # ---------- Research flow (Explee-style) ----------
 @app.post("/public/api/v1/research/start")
-def research_start(site_url: str):
+def research_start(body: ResearchStartBody):
     """Start research - no auth needed for initial flow."""
     task_id = uuid.uuid4().hex
     return {"task_id": task_id, "status": "started"}
