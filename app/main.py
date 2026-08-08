@@ -112,7 +112,7 @@ class TopUpPayload(BaseModel):
 class SignupBody(BaseModel):
     email: str
     site_url: str
-    card_token: str  # Stripe PM token, charge $0 now
+    card_token: str = ""  # Optional, Stripe Checkout handles card collection
 
 # ---------- Auth ----------
 def get_user(authorization: str = Header(default="")):
@@ -216,12 +216,14 @@ def get_config():
 
 # ---------- Research flow (Explee-style) ----------
 @app.post("/public/api/v1/research/start")
-def research_start(site_url: str, user = Depends(get_user)):
+def research_start(site_url: str):
+    """Start research - no auth needed for initial flow."""
     task_id = uuid.uuid4().hex
     return {"task_id": task_id, "status": "started"}
 
 @app.get("/public/api/v1/research/status")
-def research_status(task_id: str, user = Depends(get_user)):
+def research_status(task_id: str):
+    """Poll research status - no auth needed for initial flow."""
     return {
         "status": "completed",
         "company": {
