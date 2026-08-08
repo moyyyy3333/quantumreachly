@@ -120,8 +120,7 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
   <h2>Your $30 free credits are ready</h2>
   <div class="sub">We won't charge you today. Add a card to unlock — you'll only be billed if you don't cancel in 48h. <b>Cancel anytime.</b></div>
   <label>Email</label><input id="cEmail" type="email" placeholder="you@company.com" />
-  <label>Card number</label><input id="cCard" placeholder="4242 4242 4242 4242" />
-  <button id="cStart">Unlock $30</button>
+  <button id="cStart">Unlock $30 →</button>
   <div class="notice">By continuing you agree to be charged for usage after 48 hours unless you cancel. One-click cancel. Stripe-powered.</div>
 </div></div>
 
@@ -146,16 +145,36 @@ $('startBtn').onclick=()=>{ if(!$('site').value) return; $('modal').classList.ad
 $('navCta').onclick=e=>{e.preventDefault();$('modal').classList.add('open');};
 
 $('cStart').onclick=async()=>{
-  $('cStart').disabled=true; $('cStart').textContent='Setting up…';
+  $('cStart').disabled=true; $('cStart').textContent='Opening Stripe…';
   try{
     const r=await fetch(API+'/public/api/v1/onboard',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:'pm_test'})});
+      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:''})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.detail||'error');
-    TOK=d.secret; $('modal').classList.remove('open'); $('dash').classList.add('open');
-    $('balance').textContent='$'+d.credits_usd.toFixed(2); load();
-  }catch(e){ alert(e.message); } finally { $('cStart').disabled=false; $('cStart').textContent='Unlock $30'; }
+    if(d.status==='checkout' && d.checkout_url){
+      window.location.href=d.checkout_url;  // redirect to Stripe Checkout
+    }else if(d.status==='onboarded'){
+      // fallback (dev mode without Stripe)
+      TOK=d.secret; $('modal').classList.remove('open'); $('dash').classList.add('open');
+      $('balance').textContent='$'+d.credits_usd.toFixed(2); load();
+    }
+  }catch(e){ alert(e.message); } finally { $('cStart').disabled=false; $('cStart').textContent='Unlock $30 →'; }
 };
+
+// Handle Stripe redirect back: ?setup=success&secret=xxx
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('setup')==='success'){
+    const secret=params.get('secret');
+    if(secret){
+      TOK=secret;
+      $('modal').classList.remove('open');
+      $('dash').classList.add('open');
+      load();
+      history.replaceState({},'',window.location.pathname); // clean URL
+    }
+  }
+})();
 
 async function api(p,m=null,body=null){
   const h={}; if(TOK) h['Authorization']='Bearer '+TOK; if(body) h['Content-Type']='application/json';
