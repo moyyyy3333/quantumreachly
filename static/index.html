@@ -100,7 +100,7 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
 <!-- HERO -->
 <section class="hero"><div class="glow"></div>
   <div class="badge">⚡ $30 free credits · no subscription</div>
-  <h1>AI agents that <span>find &amp; email</span> your ideal customers <em class="while">while you sleep</em></h1>
+  <h1>AI agents that <span>find & email</span> your ideal customers <em class="while">while you sleep</em></h1>
   <p>Drop in your website. We study what you sell, find the exact people who'd buy it, and write them a personal email — fully on autopilot. You approve before anything sends.</p>
   <div class="cta-grid">
     <div class="input-wrap"><span class="https">https://</span><input class="site" id="site" placeholder="yourwebsite.com" /></div>
@@ -112,8 +112,23 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
     <div class="pf"><b>≤5 min</b><span>to first campaign</span></div>
     <div class="pf"><b>$0.03</b><span>per email sent</span></div>
   </div>
-  <div class="tiny">No credit check · <b>You review every lead &amp; email before we send</b> · cancel anytime</div>
+  <div class="tiny">No credit check · <b>You review every lead & email before we send</b> · cancel anytime</div>
 </section>
+
+<!-- RESEARCH MODAL (shows while agents work) -->
+<div class="modal" id="researchModal"><div class="card" style="max-width:500px;">
+  <div id="researchSteps"></div>
+</div></div>
+
+<!-- RESULTS MODAL (shows ICP segments + sample leads) -->
+<div class="modal" id="resultsModal"><div class="card" style="max-width:560px;">
+  <h2 id="resultsTitle">Your ideal customers</h2>
+  <div class="sub" id="resultsSub">Review the segments below. Pick one to start your first campaign.</div>
+  <div id="companyProfile"></div>
+  <div id="segmentsList"></div>
+  <button class="big" id="unlockBtn">Unlock $30 free credits →</button>
+  <div class="notice">No charge today. Card on file, auto-bill after 48h unless cancelled.</div>
+</div></div>
 
 <!-- CARD MODAL -->
 <div class="modal" id="modal"><div class="card">
@@ -138,11 +153,94 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
 </section>
 
 <script>
-const API=window.location.origin; let TOK=null;
+const API=window.location.origin; let TOK=null; let RESEARCH_TASK=null;
 const $=id=>document.getElementById(id);
 
-$('startBtn').onclick=()=>{ if(!$('site').value) return; $('modal').classList.add('open'); };
-$('navCta').onclick=e=>{e.preventDefault();$('modal').classList.add('open');};
+// Fetch Stripe publishable key on load
+(async()=>{ try{ const r=await fetch(API+'/public/api/v1/config'); const d=await r.json(); if(d.stripe_publishable_key) window.STRIPE_PUBLISHABLE_KEY=d.stripe_publishable_key; }catch(e){} })();
+
+$('startBtn').onclick=()=>{ if(!$('site').value) return; startResearch(); };
+$('navCta').onclick=e=>{e.preventDefault(); if(!$('site').value) return; startResearch(); };
+
+async function startResearch(){
+  $('researchModal').classList.add('open');
+  renderResearchSteps(['Research your company', 'Explore competitors'], 0);
+  
+  try{
+    const r=await fetch(API+'/public/api/v1/research/start',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({site_url:$('site').value})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.detail||'error');
+    RESEARCH_TASK=d.task_id;
+    pollResearch();
+  }catch(e){ alert(e.message); $('researchModal').classList.remove('open'); }
+}
+
+function renderResearchSteps(steps, currentIdx){
+  const icons=['✓','✓','▸'];
+  $('researchSteps').innerHTML=steps.map((s,i)=>`<div style="margin:12px 0;display:flex;align-items:center;gap:10px;">
+    <span style="width:24px;height:24px;border-radius:50%;background:${i<currentIdx?'var(--primary)':i===currentIdx?'var(--primary)':'var(--line)'};display:flex;align-items:center;justify-content:center;font-size:12px;color:${i<=currentIdx?'#0b0f14':'var(--muted)'}">${icons[i<currentIdx?0:i===currentIdx?2:1]}</span>
+    <span style="color:${i<=currentIdx?'var(--text)':'var(--muted)'}">${s}</span>
+  </div>`).join('');
+}
+
+async function pollResearch(){
+  if(!RESEARCH_TASK) return;
+  try{
+    const r=await fetch(API+`/public/api/v1/research/status?task_id=${RESEARCH_TASK}`);
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.detail||'error');
+    
+    if(d.status==='completed'){
+      showResults(d);
+    }else{
+      setTimeout(pollResearch, 1500);
+    }
+  }catch(e){ console.error(e); setTimeout(pollResearch, 1500); }
+}
+
+function showResults(d){
+  $('researchModal').classList.remove('open');
+  
+  // Company profile
+  $('companyProfile').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#0b0f14;">${d.company.name[0]}</div>
+      <div>
+        <div style="font-weight:600;font-size:18px;">${d.company.name}</div>
+        <div style="font-size:13px;color:var(--muted);">${d.company.domain}</div>
+      </div>
+      <span style="margin-left:auto;background:rgba(45,212,167,.15);color:var(--primary);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;">Found</span>
+    </div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">${d.company.description}</div>
+    <div style="font-size:13px;color:var(--muted);">Region: ${d.company.region}</div>
+  `;
+  
+  // Segments
+  $('segmentsList').innerHTML=d.segments.map(s=>`
+    <div class="seg">
+      <div><div class="l">${s.label}</div><div class="fit">${s.fit_score}% fit</div></div>
+      <button class="big" onclick="selectSegment('${s.label.replace(/'/g,"\\'")}')" style="padding:8px 16px;font-size:13px;">Select</button>
+    </div>
+  `).join('');
+  
+  window.SELECTED_SEGMENT=null;
+  window.RESULTS_DATA=d;
+  $('resultsModal').classList.add('open');
+}
+
+window.selectSegment=label=>{
+  window.SELECTED_SEGMENT=label;
+  document.querySelectorAll('#segmentsList button').forEach(b=>{b.style.opacity=b.textContent.includes(label)?'1':'0.5';});
+};
+
+$('unlockBtn').onclick=()=>{
+  if(!window.SELECTED_SEGMENT){ alert('Pick a segment first'); return; }
+  $('resultsModal').classList.remove('open');
+  $('modal').classList.add('open');
+};
 
 $('cStart').onclick=async()=>{
   $('cStart').disabled=true; $('cStart').textContent='Opening Stripe…';
@@ -152,9 +250,8 @@ $('cStart').onclick=async()=>{
     const d=await r.json();
     if(!r.ok) throw new Error(d.detail||'error');
     if(d.status==='checkout' && d.checkout_url){
-      window.location.href=d.checkout_url;  // redirect to Stripe Checkout
+      window.location.href=d.checkout_url;
     }else if(d.status==='onboarded'){
-      // fallback (dev mode without Stripe)
       TOK=d.secret; $('modal').classList.remove('open'); $('dash').classList.add('open');
       $('balance').textContent='$'+d.credits_usd.toFixed(2); load();
     }
@@ -171,7 +268,7 @@ $('cStart').onclick=async()=>{
       $('modal').classList.remove('open');
       $('dash').classList.add('open');
       load();
-      history.replaceState({},'',window.location.pathname); // clean URL
+      history.replaceState({},'',window.location.pathname);
     }
   }
 })();
