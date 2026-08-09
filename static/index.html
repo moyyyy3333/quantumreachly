@@ -120,24 +120,51 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
   <div id="researchSteps"></div>
 </div></div>
 
-<!-- RESULTS MODAL (shows ICP segments + sample leads) -->
-<div class="modal" id="resultsModal"><div class="card" style="max-width:560px;">
-  <h2 id="resultsTitle">Your ideal customers</h2>
-  <div class="sub" id="resultsSub">Review the segments below. Pick one to start your first campaign.</div>
-  <div id="companyProfile"></div>
-  <div id="segmentsList"></div>
-  <button class="big" id="unlockBtn">Unlock $30 free credits →</button>
-  <div class="notice">No charge today. Card on file, auto-bill after 48h unless cancelled.</div>
-</div></div>
+<!-- DASHBOARD PHASES -->
+<div class="modal" id="phasesModal"><div class="card" style="max-width:720px;max-height:90vh;overflow-y:auto;">
+  <!-- Phase indicator -->
+  <div id="phaseIndicator" style="display:flex;gap:6px;margin-bottom:28px;justify-content:space-between;"></div>
 
-<!-- CARD MODAL -->
-<div class="modal" id="modal"><div class="card">
-  <h2>Your $30 free credits are ready</h2>
-  <div class="sub">We won't charge you today. Add a card to unlock — you'll only be billed if you don't cancel in 48h. <b>Cancel anytime.</b></div>
-  <label>Email</label><input id="cEmail" type="email" placeholder="you@company.com" />
-  <label style="margin-top:18px;">Card</label><div id="card-element" style="background:var(--surface2);border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
-  <button id="cStart">Unlock $30 →</button>
-  <div class="notice">By continuing you agree to be charged for usage after 48 hours unless you cancel. One-click cancel. Stripe-powered.</div>
+  <!-- Phase 1: Segments -->
+  <div id="phase1" class="phase">
+    <h2 id="resultsTitle">Your ideal customers</h2>
+    <div class="sub" id="resultsSub">Pick a segment to find decision makers.</div>
+    <div id="companyProfile"></div>
+    <div id="segmentsList"></div>
+    <button class="big" id="nextPhase1">Continue →</button>
+  </div>
+
+  <!-- Phase 2: Prospects -->
+  <div id="phase2" class="phase" style="display:none;">
+    <h2>Decision makers found</h2>
+    <div class="sub" id="prospectsCount"></div>
+    <div id="prospectsList" style="max-height:300px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="big" id="backPhase2" style="flex:1;background:var(--surface2);color:var(--accent);">← Back</button>
+      <button class="big" id="nextPhase2" style="flex:1;">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Phase 3: Email preview -->
+  <div id="phase3" class="phase" style="display:none;">
+    <h2>Preview emails</h2>
+    <div class="sub">Review personalized emails before sending.</div>
+    <div id="emailPreview" style="max-height:320px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="big" id="backPhase3" style="flex:1;background:var(--surface2);color:var(--accent);">← Back</button>
+      <button class="big" id="nextPhase3" style="flex:1;">Unlock credits →</button>
+    </div>
+  </div>
+
+  <!-- Phase 4: Payment -->
+  <div id="phase4" class="phase" style="display:none;">
+    <h2>Your $30 free credits are ready</h2>
+    <div class="sub">We won't charge you today. Add a card to unlock — you'll only be billed if you don't cancel in 48h. <b>Cancel anytime.</b></div>
+    <label>Email</label><input id="cEmail" type="email" placeholder="you@company.com" />
+    <label style="margin-top:18px;">Card</label><div id="card-element" style="background:var(--surface2);border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
+    <button class="big" id="cStart">Unlock $30 →</button>
+    <div class="notice">By continuing you agree to be charged for usage after 48 hours unless you cancel. One-click cancel. Stripe-powered.</div>
+  </div>
 </div></div>
 
 <!-- DASHBOARD -->
@@ -215,9 +242,28 @@ async function pollResearch(){
   }catch(e){ console.error(e); setTimeout(pollResearch, 1500); }
 }
 
+function showPhaseIndicator(current){
+  const phases=['Segments','Prospects','Emails','Payment'];
+  $('phaseIndicator').innerHTML=phases.map((p,i)=>`
+    <div style="flex:1;text-align:center;">
+      <div style="width:32px;height:32px;margin:0 auto 6px;border-radius:50%;background:${i<current?'var(--primary)':i===current?'var(--primary)':'var(--line)'};display:flex;align-items:center;justify-content:center;color:#0b0f14;font-weight:700;font-size:13px;">${i<current?'✓':i+1}</div>
+      <div style="font-size:12px;color:${i<=current?'var(--text)':'var(--muted)'};">${p}</div>
+    </div>
+  `).join('');
+}
+
+function goToPhase(num){
+  document.querySelectorAll('.phase').forEach(p=>p.style.display='none');
+  $('phase'+num).style.display='block';
+  showPhaseIndicator(num-1);
+}
+
 function showResults(d){
   $('researchModal').classList.remove('open');
-  
+  window.RESULTS_DATA=d;
+  window.SELECTED_SEGMENT=null;
+  window.currentPhase=1;
+
   // Company profile
   $('companyProfile').innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -226,12 +272,10 @@ function showResults(d){
         <div style="font-weight:600;font-size:18px;">${d.company.name}</div>
         <div style="font-size:13px;color:var(--muted);">${d.company.domain}</div>
       </div>
-      <span style="margin-left:auto;background:rgba(45,212,167,.15);color:var(--primary);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;">Found</span>
     </div>
     <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">${d.company.description}</div>
-    <div style="font-size:13px;color:var(--muted);">Region: ${d.company.region}</div>
   `;
-  
+
   // Segments
   $('segmentsList').innerHTML=d.segments.map(s=>`
     <div class="seg">
@@ -239,10 +283,9 @@ function showResults(d){
       <button class="big" onclick="selectSegment('${s.label.replace(/'/g,"\\'")}')" style="padding:8px 16px;font-size:13px;">Select</button>
     </div>
   `).join('');
-  
-  window.SELECTED_SEGMENT=null;
-  window.RESULTS_DATA=d;
-  $('resultsModal').classList.add('open');
+
+  $('phasesModal').classList.add('open');
+  goToPhase(1);
 }
 
 window.selectSegment=label=>{
@@ -250,11 +293,33 @@ window.selectSegment=label=>{
   document.querySelectorAll('#segmentsList button').forEach(b=>{b.style.opacity=b.textContent.includes(label)?'1':'0.5';});
 };
 
-$('unlockBtn').onclick=()=>{
+$('nextPhase1').onclick=()=>{
   if(!window.SELECTED_SEGMENT){ alert('Pick a segment first'); return; }
-  $('resultsModal').classList.remove('open');
-  $('modal').classList.add('open');
+  const leads=window.RESULTS_DATA.sample_leads||[];
+  $('prospectsCount').textContent=`Found ${leads.length} decision makers`;
+  $('prospectsList').innerHTML=leads.map((l,i)=>`
+    <div class="seg" style="margin-bottom:8px;">
+      <div><div class="l">${l.name}</div><div class="fit">${l.role} at ${l.company}</div><div style="font-size:12px;color:var(--muted);">${l.email}</div></div>
+    </div>
+  `).join('');
+  goToPhase(2);
 };
+
+$('backPhase2').onclick=()=>goToPhase(1);
+$('nextPhase2').onclick=()=>{
+  const leads=window.RESULTS_DATA.sample_leads||[];
+  $('emailPreview').innerHTML=leads.map(l=>`
+    <div style="background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;"><b>To:</b> ${l.email}</div>
+      <div style="font-size:13px;">Hi ${l.name.split(' ')[0]},<br/><br/>I found your company ${l.company} and saw you're ${l.role}. We help teams like yours...
+      <br/><br/>— The QuantumReachly team</div>
+    </div>
+  `).join('');
+  goToPhase(3);
+};
+
+$('backPhase3').onclick=()=>goToPhase(2);
+$('nextPhase3').onclick=()=>goToPhase(4);
 
 $('cStart').onclick=async()=>{
   if(!$('cEmail').value) { alert('Please enter your email'); return; }
@@ -262,19 +327,17 @@ $('cStart').onclick=async()=>{
 
   $('cStart').disabled=true; $('cStart').textContent='Processing…';
   try{
-    // Create token with Stripe Card Element
     const cardElement=elements.getElement('card');
     const {token,error}=await stripe.createToken(cardElement);
     if(error) throw new Error(error.message);
 
-    // Send to backend
     const r=await fetch(API+'/public/api/v1/onboard',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:token.id})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.detail||'error');
 
     if(d.status==='onboarded'){
-      TOK=d.secret; $('modal').classList.remove('open'); $('dash').classList.add('open');
+      TOK=d.secret; $('phasesModal').classList.remove('open'); $('dash').classList.add('open');
       $('balance').textContent='$'+d.credits_usd.toFixed(2); load();
     }else if(d.status==='checkout' && d.checkout_url){
       window.location.href=d.checkout_url;
@@ -282,14 +345,13 @@ $('cStart').onclick=async()=>{
   }catch(e){ alert(e.message); } finally { $('cStart').disabled=false; $('cStart').textContent='Unlock $30 →'; }
 };
 
-// Handle Stripe redirect back: ?setup=success&secret=xxx
 (function(){
   const params=new URLSearchParams(window.location.search);
   if(params.get('setup')==='success'){
     const secret=params.get('secret');
     if(secret){
       TOK=secret;
-      $('modal').classList.remove('open');
+      $('phasesModal').classList.remove('open');
       $('dash').classList.add('open');
       load();
       history.replaceState({},'',window.location.pathname);
