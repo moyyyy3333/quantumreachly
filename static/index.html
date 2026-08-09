@@ -135,7 +135,7 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
   <h2>Your $30 free credits are ready</h2>
   <div class="sub">We won't charge you today. Add a card to unlock — you'll only be billed if you don't cancel in 48h. <b>Cancel anytime.</b></div>
   <label>Email</label><input id="cEmail" type="email" placeholder="you@company.com" />
-  <label style="margin-top:18px;">Card Details</label><div id="payment-element"></div>
+  <label style="margin-top:18px;">Card</label><div id="card-element" style="background:var(--surface2);border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
   <button id="cStart">Unlock $30 →</button>
   <div class="notice">By continuing you agree to be charged for usage after 48 hours unless you cancel. One-click cancel. Stripe-powered.</div>
 </div></div>
@@ -166,9 +166,9 @@ const $=id=>document.getElementById(id);
     if(d.stripe_publishable_key){
       window.STRIPE_PUBLISHABLE_KEY=d.stripe_publishable_key;
       stripe=Stripe(window.STRIPE_PUBLISHABLE_KEY);
-      elements=stripe.elements();
-      const paymentElement=elements.create('payment');
-      paymentElement.mount('#payment-element');
+      elements=stripe.elements({appearance:{theme:'dark',variables:{colorPrimary:'#2dd4a7',colorText:'#e8edf2',colorTextSecondary:'#8a98a8',colorBorder:'#1f2933',borderRadius:'8px'}}});
+      const cardElement=elements.create('card');
+      cardElement.mount('#card-element');
     }
   }catch(e){ console.error('Failed to load Stripe config',e); }
 })();
@@ -262,13 +262,14 @@ $('cStart').onclick=async()=>{
 
   $('cStart').disabled=true; $('cStart').textContent='Processing…';
   try{
-    // Create payment method with Stripe
-    const {paymentMethod,error}=await stripe.createPaymentMethod({type:'card',card:elements.getElement('card')});
+    // Create token with Stripe Card Element
+    const cardElement=elements.getElement('card');
+    const {token,error}=await stripe.createToken(cardElement);
     if(error) throw new Error(error.message);
 
     // Send to backend
     const r=await fetch(API+'/public/api/v1/onboard',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:paymentMethod.id})});
+      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:token.id})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.detail||'error');
 
