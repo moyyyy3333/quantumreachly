@@ -293,28 +293,41 @@ window.selectSegment=label=>{
   document.querySelectorAll('#segmentsList button').forEach(b=>{b.style.opacity=b.textContent.includes(label)?'1':'0.5';});
 };
 
-$('nextPhase1').onclick=()=>{
+$('nextPhase1').onclick=async()=>{
   if(!window.SELECTED_SEGMENT){ alert('Pick a segment first'); return; }
-  const leads=window.RESULTS_DATA.sample_leads||[];
-  $('prospectsCount').textContent=`Found ${leads.length} decision makers`;
-  $('prospectsList').innerHTML=leads.map((l,i)=>`
-    <div class="seg" style="margin-bottom:8px;">
-      <div><div class="l">${l.name}</div><div class="fit">${l.role} at ${l.company}</div><div style="font-size:12px;color:var(--muted);">${l.email}</div></div>
-    </div>
-  `).join('');
+  try{
+    const r=await fetch(API+'/public/api/v1/research/leads?segment_id=1');
+    const d=await r.json();
+    const leads=d.leads||[];
+    $('prospectsCount').textContent=`Found ${leads.length} decision makers`;
+    $('prospectsList').innerHTML=leads.map((l,i)=>`
+      <div class="seg" style="margin-bottom:8px;">
+        <div><div class="l">${l.name}</div><div class="fit">${l.role} at ${l.company}</div><div style="font-size:12px;color:var(--muted);">${l.email}</div></div>
+      </div>
+    `).join('');
+  }catch(e){
+    alert('Error loading prospects: '+e.message);
+  }
   goToPhase(2);
 };
 
 $('backPhase2').onclick=()=>goToPhase(1);
-$('nextPhase2').onclick=()=>{
-  const leads=window.RESULTS_DATA.sample_leads||[];
-  $('emailPreview').innerHTML=leads.map(l=>`
-    <div style="background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;"><b>To:</b> ${l.email}</div>
-      <div style="font-size:13px;">Hi ${l.name.split(' ')[0]},<br/><br/>I found your company ${l.company} and saw you're ${l.role}. We help teams like yours...
-      <br/><br/>— The QuantumReachly team</div>
-    </div>
-  `).join('');
+$('nextPhase2').onclick=async()=>{
+  try{
+    const r=await fetch(API+'/public/api/v1/research/leads?segment_id=1');
+    const d=await r.json();
+    const leads=d.leads||[];
+    window.CURRENT_LEADS=leads;
+    $('emailPreview').innerHTML=leads.map(l=>`
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;"><b>To:</b> ${l.email}</div>
+        <div style="font-size:13px;">Hi ${l.name.split(' ')[0]},<br/><br/>I found your company ${l.company} and saw you're ${l.role}. We help teams like yours find more leads through AI prospecting...
+        <br/><br/>— The QuantumReachly team</div>
+      </div>
+    `).join('');
+  }catch(e){
+    alert('Error loading emails: '+e.message);
+  }
   goToPhase(3);
 };
 

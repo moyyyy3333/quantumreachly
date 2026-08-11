@@ -72,6 +72,18 @@ def init():
         CREATE TABLE IF NOT EXISTS suppress(
             id INTEGER PRIMARY KEY, kind TEXT, value TEXT, note TEXT);
         """)
+        # Seed demo leads (only if table is empty)
+        if c.execute("SELECT COUNT(*) FROM leads").fetchone()[0] == 0:
+            demo_leads = [
+                (1, "Rachel Whitfield", "Owner", "Sweet Pea Events", "rachel@sweetpeaevents.com", 92),
+                (1, "Dana Okafor", "Lead Designer", "Tupelo Honey", "dana@tupelohoney.com", 85),
+                (1, "Mia Castellanos", "Founder", "The Bloom Lab", "mia@thebloomlab.com", 88),
+                (2, "James Chen", "VP Sales", "Event Corp", "james@eventcorp.com", 78),
+                (2, "Sarah Mills", "Event Director", "Milestone Venues", "sarah@milestonevenues.com", 82),
+            ]
+            for segment_id, name, role, company, email, fit in demo_leads:
+                c.execute("INSERT INTO leads(segment_id, name, role, company, email, fit) VALUES(?,?,?,?,?,?)",
+                         (segment_id, name, role, company, email, fit))
 init()
 
 # ---------- Pydantic models (mirror Explee OpenAPI) ----------
@@ -241,12 +253,15 @@ def research_status(task_id: str):
             {"label": "Wedding/event studios", "fit_score": 88},
             {"label": "Corporate buyers", "fit_score": 74}
         ],
-        "sample_leads": [
-            {"name": "Rachel Whitfield", "role": "Owner", "company": "Sweet Pea Events", "email": "rachel@sweetpeaevents.com"},
-            {"name": "Dana Okafor", "role": "Lead Designer", "company": "Tupelo Honey", "email": "dana@tupelohoney.com"},
-            {"name": "Mia Castellanos", "role": "Founder", "company": "The Bloom Lab", "email": "mia@thebloomlab.com"}
-        ]
+        "sample_leads": []
     }
+
+@app.get("/public/api/v1/research/leads")
+def research_leads(segment_id: int = 1):
+    """Fetch leads for a segment - real data from DB."""
+    with db() as c:
+        rows = c.execute("SELECT name, role, company, email FROM leads WHERE segment_id=?", (segment_id,)).fetchall()
+    return {"leads": [dict(r) for r in rows]}
 
 # ---------- Search (mirror Explee; our engine: seeded demo over local DB) ----------
 @app.post("/public/api/v1/search/companies")
