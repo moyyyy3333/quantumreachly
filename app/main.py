@@ -146,7 +146,7 @@ def cancel(secret: str):
 # ---------- Stripe Checkout (setup mode = save card, no charge) ----------
 @app.post("/public/api/v1/onboard")
 def onboard(b: SignupBody):
-    """Create Stripe Checkout Session for card collection. Returns session URL."""
+    """Save card token or create checkout session."""
     secret = uuid.uuid4().hex
     now = time.time()
     with db() as c:
@@ -166,6 +166,16 @@ def onboard(b: SignupBody):
                       (uid, label, score))
             c.execute("INSERT INTO campaigns(user_id,segment_id,status,daily_limit_usd) VALUES(?,(SELECT id FROM segments WHERE user_id=? AND label=?),'Ready',20)",
                       (uid, uid, label))
+
+    if b.card_token:
+        try:
+            pm = stripe.PaymentMethod.create(type="card", card={"token": b.card_token})
+            with db() as c:
+                c.execute("UPDATE users SET card_token=? WHERE secret=?", (pm.id, secret))
+            return {"status":"onboarded","secret":secret,"credits_usd":30.0,"trial_ends_at":now+48*3600}
+        except Exception as e:
+            return {"status":"error","message":str(e)}
+
     try:
         session = stripe.checkout.Session.create(
             mode="setup",
