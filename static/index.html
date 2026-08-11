@@ -194,8 +194,8 @@ const $=id=>document.getElementById(id);
       window.STRIPE_PUBLISHABLE_KEY=d.stripe_publishable_key;
       stripe=Stripe(window.STRIPE_PUBLISHABLE_KEY);
       elements=stripe.elements({appearance:{theme:'dark',variables:{colorPrimary:'#2dd4a7',colorText:'#e8edf2',colorTextSecondary:'#8a98a8',colorBorder:'#1f2933',borderRadius:'8px'}}});
-      const cardElement=elements.create('card');
-      cardElement.mount('#card-element');
+      const paymentElement=elements.create('payment');
+      paymentElement.mount('#card-element');
     }
   }catch(e){ console.error('Failed to load Stripe config',e); }
 })();
@@ -340,12 +340,11 @@ $('cStart').onclick=async()=>{
 
   $('cStart').disabled=true; $('cStart').textContent='Processing…';
   try{
-    const cardElement=elements.getElement('card');
-    const {token,error}=await stripe.createToken(cardElement);
+    const {paymentMethod,error}=await stripe.createPaymentMethod({type:'card',card:elements.getElement('payment')});
     if(error) throw new Error(error.message);
 
     const r=await fetch(API+'/public/api/v1/onboard',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:token.id})});
+      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:paymentMethod.id})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.detail||'error');
 
