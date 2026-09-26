@@ -3,6 +3,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>QuantumReachly — AI agents that find your clients while you sleep</title>
+<meta name="description" content="Paste your website. QuantumReachly writes a specific email and sends it. A generic note is held. $30 in credits to start. $0.03 per email sent.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://quantumreachly.onrender.com">
+<meta property="og:title" content="QuantumReachly — paste your site, the specific notes send">
+<meta property="og:description" content="AI reads what you sell and sends the email when it is specific to that person. A generic note is held. $30 in credits to start.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="QuantumReachly — paste your site, the specific notes send">
+<meta name="twitter:description" content="AI reads what you sell and sends the email when it is specific to that person. A generic note is held.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f14'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%232dd4a7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0b0f14;color:#e8edf2;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -12,26 +24,26 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 a{color:var(--accent);text-decoration:none}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
-/* ---------- nav ---------- */
 nav{position:fixed;top:0;left:0;right:0;z-index:50;backdrop-filter:blur(12px);background:rgba(11,15,20,.8);border-bottom:1px solid var(--line)}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;padding-top:16px;padding-bottom:16px}
 .brand{font-weight:700;letter-spacing:-.02em;font-size:19px}
 .brand em{font-style:normal;color:var(--accent)}
 nav a.ghost{color:var(--muted);margin-left:20px;font-size:14px}
+nav a.ghost:hover{color:var(--text)}
 nav a.cta{background:var(--primary);color:#0b0f14;padding:8px 16px;border-radius:8px;font-weight:600;font-size:14px;margin-left:20px}
-/* ---------- hero ---------- */
 .hero{padding:150px 24px 90px;text-align:center;position:relative;overflow:hidden}
 .hero .glow{position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse at center,rgba(45,212,167,.18),transparent 65%);pointer-events:none}
 .hero h1{font-size:clamp(34px,6vw,60px);font-weight:700;letter-spacing:-.03em;line-height:1.08;max-width:760px;margin:0 auto 20px}
 .hero h1 span{color:var(--accent)}
+.hero h1 em{font-style:italic;font-weight:650}
 .hero p{color:var(--muted);max-width:560px;margin:0 auto 36px;font-size:17px}
 .hero .cta-grid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 input.site{background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:14px 18px;border-radius:10px;font-size:15px;width:min(420px,80vw);outline:none}
 input.site:focus{border-color:var(--primary)}
 button.big{background:var(--primary);color:#0b0f14;border:0;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer}
 button.big:disabled{opacity:.5;cursor:default}
+button.ghostbtn{background:var(--surface2);color:var(--accent)}
 .tiny{color:var(--muted);font-size:12.5px;margin-top:14px}
-/* ---------- card modal ---------- */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:100;padding:24px}
 .modal.open{display:grid}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;max-width:420px;width:100%;padding:28px}
@@ -39,10 +51,12 @@ button.big:disabled{opacity:.5;cursor:default}
 .card .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
 .card label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
 .card input{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:8px;font-size:15px}
-.card button{margin-top:22px;width:100%;background:var(--primary);color:#0b0f14;border:0;padding:14px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer}
+.card button.big{margin-top:22px}
+.card .rowbtns{display:flex;gap:10px;margin-top:8px}
+.card .rowbtns button.big{margin-top:0;flex:1}
 .notice{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}
-/* ---------- dashboard ---------- */
-.dash{display:none;padding:110px 24px 60px}
+.err{color:#f6a08c;font-size:13px;margin-top:10px;min-height:1.2em}
+.dash{display:none;padding:110px 24px 60px;max-width:1120px;margin:0 auto}
 .dash.open{display:block}
 .dash h2{font-size:26px;letter-spacing:-.02em;margin-bottom:4px}
 .dash .bal{color:var(--accent);font-weight:700}
@@ -52,13 +66,15 @@ button.big:disabled{opacity:.5;cursor:default}
 .stat .k{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
 .stat .v{font-size:28px;font-weight:700;margin-top:6px}
 .rail{display:grid;grid-template-columns:1fr;gap:12px}
-.seg{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center}
+.seg{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+.seg.picked{border-color:var(--primary)}
 .seg .l{font-weight:600}
 .seg .fit{color:var(--accent);font-size:13px}
-.seg .pill{font-size:12px;background:var(--surface2);border:1px solid var(--line);padding:4px 10px;border-radius:99px;color:var(--muted)}
+.seg .why{color:var(--muted);font-size:13px;margin-top:4px}
+.seg .pill,button.pill{font:inherit;font-size:12px;background:var(--surface2);border:1px solid var(--line);padding:4px 10px;border-radius:99px;color:var(--muted);cursor:pointer}
+.seg button.pick{width:auto;margin:0;padding:8px 16px;font-size:13px}
 .pause{color:#f6a08c}
 .infobar{color:var(--muted);font-size:13px;margin-top:18px;line-height:1.6}
-.toggle_cta_placeholder{display:none}
 .badge{display:inline-block;background:rgba(45,212,167,.12);border:1px solid rgba(45,212,167,.35);color:var(--accent);
 padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom:24px;letter-spacing:.01em}
 .proof{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:44px auto 0;max-width:720px}
@@ -66,8 +82,52 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
 .pf b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
 .pf span{color:var(--muted);font-size:12.5px}
 .input-wrap{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:10px;overflow:hidden;width:min(420px,80vw)}
+.input-wrap.bad{border-color:#f6a08c}
 .input-wrap .https{color:var(--muted);font-size:14px;padding:0 0 0 16px;letter-spacing:.02em}
 .input-wrap input.site{border:0;background:transparent;width:100%;padding:14px 16px 14px 4px;font-size:15px;color:var(--text);outline:none}
+.eyebrow{color:var(--accent);font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.band{padding:84px 0;border-top:1px solid var(--line)}
+.band h2{font-size:clamp(28px,4vw,42px);letter-spacing:-.03em;line-height:1.12;max-width:680px}
+.lede{color:var(--muted);max-width:560px;margin-top:12px;font-size:16.5px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:36px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.step .n{color:var(--accent);font-weight:700;font-size:13px}
+.step h3{margin:10px 0 8px;font-size:16px;letter-spacing:-.02em}
+.step p{color:var(--muted);font-size:14px}
+.split{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:start}
+.feature-list{display:grid;gap:14px;margin-top:28px}
+.feature{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start}
+.feature b{display:block;margin-bottom:2px}
+.feature span{color:var(--muted);font-size:14px}
+.mark{width:28px;height:28px;border-radius:8px;background:rgba(45,212,167,.12);color:var(--accent);display:grid;place-items:center;font-size:13px;font-weight:700}
+.price{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px}
+.price .amt{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.price .amt span{font-size:16px;color:var(--muted);font-weight:600;letter-spacing:0}
+.price .tag{color:var(--accent);font-size:13px;font-weight:600;margin:8px 0 4px}
+.price ul{list-style:none;margin:16px 0 8px}
+.price li{padding:10px 0;border-top:1px solid var(--line);font-size:14.5px;color:var(--muted)}
+.price li b{color:var(--text);font-weight:600}
+.faq details{border-top:1px solid var(--line);padding:16px 0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;font-weight:600;letter-spacing:-.01em}
+.faq p{color:var(--muted);margin-top:8px;font-size:14.5px;max-width:680px}
+.final{text-align:center;padding:88px 24px}
+.final h2{margin:0 auto 12px;max-width:640px}
+.final p{color:var(--muted);margin-bottom:22px}
+footer{border-top:1px solid var(--line);padding:28px 0 48px;color:var(--muted);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a{color:var(--muted);margin-left:14px}
+footer a:hover{color:var(--text)}
+.sample-note{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+.mail{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px}
+.mail .to{font-size:12px;color:var(--muted);margin-bottom:6px}
+.mail .subj{font-weight:650;font-size:14px;margin-bottom:8px}
+.mail .body{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:#d5dee6}
+.company-desc{font-size:14px;color:var(--muted);margin-bottom:14px}
+body.in-app .hero,body.in-app #marketing,body.in-app footer{display:none}
+@media(max-width:900px){
+  .steps,.split{grid-template-columns:1fr}
+}
 @media(max-width:760px){
   .grid3{grid-template-columns:1fr}
   nav .wrap{padding-top:12px;padding-bottom:12px}
@@ -83,6 +143,8 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
   .proof{gap:24px;margin-top:34px}
   .pf b{font-size:22px}
   .input-wrap{width:100%}
+  .card .rowbtns{flex-direction:column}
+  .band{padding:64px 0}
 }
 @media(max-width:420px){
   .hero p{font-size:15px}
@@ -94,16 +156,19 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
 
 <nav><div class="wrap">
   <div class="brand">QuantumReachly<em>.</em></div>
-  <div><a class="ghost" href="#how">How it works</a><a class="cta" href="#" id="navCta">Get started</a></div>
+  <div>
+    <a class="ghost" href="#how">How it works</a>
+    <a class="ghost" href="#pricing">Pricing</a>
+    <a class="cta" href="#top" id="navCta">Get started</a>
+  </div>
 </div></nav>
 
-<!-- HERO -->
-<section class="hero"><div class="glow"></div>
-  <div class="badge">⚡ $30 free credits · no subscription</div>
-  <h1>AI agents that <span>find & email</span> your ideal customers <em class="while">while you sleep</em></h1>
-  <p>Drop in your website. We study what you sell, find the exact people who'd buy it, and write them a personal email — fully on autopilot. You approve before anything sends.</p>
+<section class="hero" id="top"><div class="glow"></div>
+  <div class="badge">$30 free credits · no subscription</div>
+  <h1>AI agents that <span>find & email</span> your ideal customers <em>while you sleep</em></h1>
+  <p>Drop in your website. We study what you sell, find the people who'd buy it, and write each of them a personal email. If the note is specific, it sends. If it is generic, it is held.</p>
   <div class="cta-grid">
-    <div class="input-wrap"><span class="https">https://</span><input class="site" id="site" placeholder="yourwebsite.com" /></div>
+    <div class="input-wrap" id="siteWrap"><span class="https">https://</span><input class="site" id="site" placeholder="yourwebsite.com" autocomplete="url" /></div>
     <button class="big" id="startBtn">Find my ideal customers →</button>
   </div>
   <div class="proof">
@@ -112,290 +177,552 @@ padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom
     <div class="pf"><b>≤5 min</b><span>to first campaign</span></div>
     <div class="pf"><b>$0.03</b><span>per email sent</span></div>
   </div>
-  <div class="tiny">No credit check · <b>You review every lead & email before we send</b> · cancel anytime</div>
+  <div class="tiny">No charge today · <b>A specific note sends on its own. A vague one does not.</b> · cancel within 48 hours</div>
 </section>
 
-<!-- RESEARCH MODAL (shows while agents work) -->
+<div id="marketing">
+  <section class="band" id="how"><div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>From your homepage to a note that is specific enough to send.</h2>
+    <p class="lede">Four steps. You do not approve each email. A note that does not say who it is for, and what you sell, stays unsent.</p>
+    <div class="steps">
+      <article class="step"><div class="n">01</div><h3>Paste your site</h3><p>We read the public homepage and name what you sell, in your words.</p></article>
+      <article class="step"><div class="n">02</div><h3>Pick a segment</h3><p>You get a short list of buyer groups, ranked, with the reason each one fits.</p></article>
+      <article class="step"><div class="n">03</div><h3>Write the note</h3><p>Each person gets their own subject and body, tied to your homepage.</p></article>
+      <article class="step"><div class="n">04</div><h3>Send what makes sense</h3><p>Specific notes go out when the account opens. Generic ones are held, and you can pause a segment any time.</p></article>
+    </div>
+  </div></section>
+
+  <section class="band" id="product"><div class="wrap split">
+    <div>
+      <p class="eyebrow">What you get</p>
+      <h2>Outbound that sends the note only when it is about them.</h2>
+      <div class="feature-list">
+        <div class="feature"><div class="mark">1</div><div><b>Built from your site</b><span>The first pass uses your homepage, not a blank persona form.</span></div></div>
+        <div class="feature"><div class="mark">2</div><div><b>Segments you can reject</b><span>Fit is a ranking, not a promise. Skip a group that is wrong.</span></div></div>
+        <div class="feature"><div class="mark">3</div><div><b>A draft per person</b><span>The note names their role and why that group is on the list.</span></div></div>
+        <div class="feature"><div class="mark">4</div><div><b>A balance you can see</b><span>$30 to start. Sent emails are $0.03. Search calls are $1. Held notes are free.</span></div></div>
+      </div>
+    </div>
+    <div class="price">
+      <div class="tag">Starter credits</div>
+      <div class="amt">$30 <span>included</span></div>
+      <ul>
+        <li><b>$0</b> charged when you add a card</li>
+        <li><b>$0.03</b> each email that sends</li>
+        <li><b>$1</b> each company or people search on the account</li>
+        <li><b>48 hours</b> to cancel before usage is billed</li>
+      </ul>
+      <p class="notice">About a thousand sends fit in the starter credits if you are not also running searches. A held note costs nothing. Cancel in one click. You keep the credits already on the account.</p>
+    </div>
+  </div></section>
+
+  <section class="band" id="pricing"><div class="wrap">
+    <p class="eyebrow">Pricing</p>
+    <h2>Usage, not a seat.</h2>
+    <p class="lede">There is no monthly plan. Credits pay for the emails that send and the searches you run. The preview on this page, before you create an account, does not spend credits.</p>
+    <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+      <article class="step"><div class="n">Today</div><h3>$0</h3><p>Add a card to unlock the $30. We do not charge it at signup.</p></article>
+      <article class="step"><div class="n">Per send</div><h3>$0.03</h3><p>Charged when a specific note sends. A held note costs nothing.</p></article>
+      <article class="step"><div class="n">After 48h</div><h3>Usage</h3><p>If you have not cancelled, continued usage is billed to the card. Cancel keeps the credits you have.</p></article>
+    </div>
+  </div></section>
+
+  <section class="band" id="faq"><div class="wrap">
+    <p class="eyebrow">Questions</p>
+    <h2>Before you paste a URL.</h2>
+    <div class="faq" style="margin-top:28px">
+      <details open>
+        <summary>Do you send email without me?</summary>
+        <p>Yes. Once the account is open, a note sends on its own if it names the person, names their company, and uses what your homepage says. You do not approve each one. If the page was unreadable or the note is generic, it is held and you are not charged.</p>
+      </details>
+      <details>
+        <summary>What is the preview I see before paying?</summary>
+        <p>We read your public homepage, pick buyer groups, and write the notes. Sample contacts use the reserved .example domain. Those notes still have to make sense before they send, and a .example address is not a real inbox.</p>
+      </details>
+      <details>
+        <summary>When does the card get charged?</summary>
+        <p>Not at signup. The card is there so usage can be billed after 48 hours if you do not cancel. Cancel is on the dashboard and stops that auto-charge. Credits already issued stay on the account.</p>
+      </details>
+      <details>
+        <summary>What does $30 cover?</summary>
+        <p>Sent emails are $0.03 each, so the starter credits cover about a thousand sends. Held notes are free. A company search or a people search on the account is $1. The homepage preview is free.</p>
+      </details>
+      <details>
+        <summary>What do you read from my site?</summary>
+        <p>The public page at the URL you paste: the title and the description. We do not ask you to connect an inbox, a CRM, or an ad account to see the first draft.</p>
+      </details>
+    </div>
+  </div></section>
+
+  <section class="final">
+    <h2>Paste the site. Specific notes send.</h2>
+    <p>A few minutes to the first batch. Vague notes stay in the queue and cost nothing.</p>
+    <button class="big" id="bottomCta">Find my ideal customers →</button>
+  </section>
+</div>
+
+<footer><div class="wrap">
+  <div>QuantumReachly. Specific notes send. Generic ones are held.</div>
+  <div>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+  </div>
+</div></footer>
+
 <div class="modal" id="researchModal"><div class="card" style="max-width:500px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px">
+    <h2 style="margin:0">Reading your site</h2>
+    <button type="button" class="pill" id="closeResearch">Close</button>
+  </div>
+  <div class="sub" id="researchSub">This stays on the public page you pasted.</div>
   <div id="researchSteps"></div>
+  <div class="err" id="researchErr"></div>
 </div></div>
 
-<!-- DASHBOARD PHASES -->
 <div class="modal" id="phasesModal"><div class="card" style="max-width:720px;max-height:90vh;overflow-y:auto;">
-  <!-- Phase indicator -->
+  <div style="display:flex;justify-content:flex-end;margin:-6px 0 10px">
+    <button type="button" class="pill" id="closePhases">Close</button>
+  </div>
   <div id="phaseIndicator" style="display:flex;gap:6px;margin-bottom:28px;justify-content:space-between;"></div>
+  <div class="err" id="phaseErr"></div>
 
-  <!-- Phase 1: Segments -->
   <div id="phase1" class="phase">
     <h2 id="resultsTitle">Your ideal customers</h2>
-    <div class="sub" id="resultsSub">Pick a segment to find decision makers.</div>
+    <div class="sub" id="resultsSub">Pick a segment to read the drafts.</div>
     <div id="companyProfile"></div>
     <div id="segmentsList"></div>
     <button class="big" id="nextPhase1">Continue →</button>
   </div>
 
-  <!-- Phase 2: Prospects -->
   <div id="phase2" class="phase" style="display:none;">
-    <h2>Decision makers found</h2>
+    <h2>People in this segment</h2>
     <div class="sub" id="prospectsCount"></div>
+    <p class="sample-note">Sample contacts for the draft. Addresses use .example so this preview cannot hit a real inbox.</p>
     <div id="prospectsList" style="max-height:300px;overflow-y:auto;margin-bottom:16px;"></div>
-    <div style="display:flex;gap:10px;">
-      <button class="big" id="backPhase2" style="flex:1;background:var(--surface2);color:var(--accent);">← Back</button>
-      <button class="big" id="nextPhase2" style="flex:1;">Continue →</button>
+    <div class="rowbtns">
+      <button class="big ghostbtn" id="backPhase2">← Back</button>
+      <button class="big" id="nextPhase2">Read the emails →</button>
     </div>
   </div>
 
-  <!-- Phase 3: Email preview -->
   <div id="phase3" class="phase" style="display:none;">
-    <h2>Preview emails</h2>
-    <div class="sub">Review personalized emails before sending.</div>
+    <h2>Emails</h2>
+    <div class="sub">A note marked “Sends” goes out when the account opens. A note marked “Held” does not, and it is not charged.</div>
     <div id="emailPreview" style="max-height:320px;overflow-y:auto;margin-bottom:16px;"></div>
-    <div style="display:flex;gap:10px;">
-      <button class="big" id="backPhase3" style="flex:1;background:var(--surface2);color:var(--accent);">← Back</button>
-      <button class="big" id="nextPhase3" style="flex:1;">Unlock credits →</button>
+    <div class="rowbtns">
+      <button class="big ghostbtn" id="backPhase3">← Back</button>
+      <button class="big" id="nextPhase3">Unlock credits →</button>
     </div>
   </div>
 
-  <!-- Phase 4: Payment -->
   <div id="phase4" class="phase" style="display:none;">
-    <h2>Your $30 free credits are ready</h2>
-    <div class="sub">We won't charge you today. Add a card to unlock — you'll only be billed if you don't cancel in 48h. <b>Cancel anytime.</b></div>
-    <label>Email</label><input id="cEmail" type="email" placeholder="you@company.com" />
-    <label style="margin-top:18px;">Card</label><div id="card-element" style="background:var(--surface2);border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
+    <h2>Your $30 credits are ready</h2>
+    <div class="sub">Nothing is charged today. A card on file lets usage bill after 48 hours if you do not cancel. <b>Cancel anytime</b> from the dashboard. You keep the credits already issued.</div>
+    <label>Email</label><input id="cEmail" type="email" placeholder="you@company.com" autocomplete="email" />
+    <div id="cardBlock">
+      <label>Card</label>
+      <div id="card-element" style="background:var(--surface2);border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
+    </div>
+    <p class="notice" id="noCard" style="display:none">Card capture is not configured in this environment. You can still open the dashboard and read the drafts.</p>
+    <div class="err" id="payErr"></div>
     <button class="big" id="cStart">Unlock $30 →</button>
-    <div class="notice">By continuing you agree to be charged for usage after 48 hours unless you cancel. One-click cancel. Stripe-powered.</div>
+    <div class="notice">By continuing you agree that usage after 48 hours is charged unless you cancel. Stripe processes the card when one is on file.</div>
   </div>
 </div></div>
 
-<!-- DASHBOARD -->
 <section class="dash" id="dash">
   <h2>Your campaigns</h2>
   <div class="sub">Balance: <span class="bal" id="balance">$30.00</span> &nbsp;·&nbsp; <a href="#" id="cancelLink" style="color:#f6a08c">Cancel auto-charge</a></div>
   <div class="grid3">
-    <div class="stat"><div class="k">Leads found</div><div class="v" id="stLeads">–</div></div>
-    <div class="stat"><div class="k">Emails sent</div><div class="v" id="stSent">–</div></div>
-    <div class="stat"><div class="k">Meetings booked</div><div class="v" id="stMeets">–</div></div>
+    <div class="stat"><div class="k">Preview leads</div><div class="v" id="stLeads">0</div></div>
+    <div class="stat"><div class="k">Emails sent</div><div class="v" id="stSent">0</div></div>
+    <div class="stat"><div class="k">Meetings booked</div><div class="v" id="stMeets">0</div></div>
   </div>
   <div class="rail" id="rail"></div>
-  <div class="infobar" id="info">Paste a website, pick a segment, and our agents find the exact people — then you review before any email goes out.</div>
+  <div class="infobar" id="info">Specific notes for the segment you picked send when this account opens. You can pause a segment below.</div>
 </section>
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-const API=window.location.origin; let TOK=null; let RESEARCH_TASK=null; let stripe=null; let elements=null;
-const $=id=>document.getElementById(id);
+const API = window.location.origin;
+let TOK = null;
+let RESEARCH_TASK = null;
+let stripe = null;
+let elements = null;
+let paymentMounted = false;
+let stripeReady = false;
+let polls = 0;
+let researchGen = 0;
+const $ = id => document.getElementById(id);
 
-// Fetch Stripe publishable key and initialize Stripe
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function phaseErr(msg){ $('phaseErr').textContent = msg || ''; }
+function payErr(msg){ $('payErr').textContent = msg || ''; }
+
 (async()=>{
   try{
-    const r=await fetch(API+'/public/api/v1/config');
-    const d=await r.json();
-    if(d.stripe_publishable_key){
-      window.STRIPE_PUBLISHABLE_KEY=d.stripe_publishable_key;
-      stripe=Stripe(window.STRIPE_PUBLISHABLE_KEY);
-      elements=stripe.elements({appearance:{theme:'dark',variables:{colorPrimary:'#2dd4a7',colorText:'#e8edf2',colorTextSecondary:'#8a98a8',colorBorder:'#1f2933',borderRadius:'8px'}}});
-      const paymentElement=elements.create('payment');
-      paymentElement.mount('#card-element');
+    const r = await fetch(API + '/public/api/v1/config');
+    const d = await r.json();
+    if(d.stripe_publishable_key && window.Stripe){
+      stripe = Stripe(d.stripe_publishable_key);
+      elements = stripe.elements({
+        mode: 'setup',
+        currency: 'usd',
+        paymentMethodTypes: ['card'],
+        paymentMethodCreation: 'manual',
+        appearance: {theme:'night', variables:{
+          colorPrimary:'#2dd4a7', colorBackground:'#161d26', colorText:'#e8edf2',
+          colorTextSecondary:'#8a98a8', colorDanger:'#f6a08c', borderRadius:'8px'
+        }}
+      });
+      stripeReady = true;
     }
-  }catch(e){ console.error('Failed to load Stripe config',e); }
+  }catch(e){ /* card capture stays off */ }
+  if(!stripeReady){
+    $('cardBlock').style.display = 'none';
+    $('noCard').style.display = 'block';
+    $('cStart').textContent = 'Open my dashboard';
+  }
 })();
 
-$('startBtn').onclick=()=>{ if(!$('site').value) return; startResearch(); };
-$('navCta').onclick=e=>{e.preventDefault(); if(!$('site').value) return; startResearch(); };
+function focusSite(){
+  window.scrollTo({top:0, behavior:'smooth'});
+  $('site').focus();
+}
+function siteValue(){ return $('site').value.trim(); }
+function requireSite(){
+  if(siteValue()){ $('siteWrap').classList.remove('bad'); return true; }
+  $('siteWrap').classList.add('bad');
+  $('site').focus();
+  return false;
+}
+$('site').addEventListener('input', () => $('siteWrap').classList.remove('bad'));
+$('site').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); if(requireSite()) startResearch(); } });
+$('startBtn').onclick = () => { if(requireSite()) startResearch(); };
+$('closeResearch').onclick = () => { researchGen += 1; $('researchModal').classList.remove('open'); $('startBtn').disabled = false; };
+$('closePhases').onclick = () => { $('phasesModal').classList.remove('open'); };
+$('bottomCta').onclick = () => { focusSite(); };
+$('navCta').onclick = e => {
+  e.preventDefault();
+  if(document.body.classList.contains('in-app')){
+    document.body.classList.remove('in-app');
+    $('dash').classList.remove('open');
+    $('navCta').textContent = 'Get started';
+    focusSite();
+    return;
+  }
+  if(requireSite()) startResearch();
+};
 
 async function startResearch(){
+  const gen = ++researchGen;
+  polls = 0;
+  $('researchErr').textContent = '';
   $('researchModal').classList.add('open');
-  renderResearchSteps(['Research your company', 'Explore competitors'], 0);
-  
+  renderResearchSteps(0);
+  $('startBtn').disabled = true;
   try{
-    const r=await fetch(API+'/public/api/v1/research/start',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({site_url:$('site').value})
+    const r = await fetch(API + '/public/api/v1/research/start', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({site_url: siteValue()})
     });
-    const d=await r.json();
-    if(!r.ok) throw new Error(d.detail||'error');
-    RESEARCH_TASK=d.task_id;
-    pollResearch();
-  }catch(e){ alert(e.message); $('researchModal').classList.remove('open'); }
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || 'Could not start research');
+    RESEARCH_TASK = d.task_id;
+    pollResearch(gen);
+  }catch(e){
+    $('researchErr').textContent = e.message;
+    $('startBtn').disabled = false;
+  }
 }
 
-function renderResearchSteps(steps, currentIdx){
-  const icons=['✓','✓','▸'];
-  $('researchSteps').innerHTML=steps.map((s,i)=>`<div style="margin:12px 0;display:flex;align-items:center;gap:10px;">
-    <span style="width:24px;height:24px;border-radius:50%;background:${i<currentIdx?'var(--primary)':i===currentIdx?'var(--primary)':'var(--line)'};display:flex;align-items:center;justify-content:center;font-size:12px;color:${i<=currentIdx?'#0b0f14':'var(--muted)'}">${icons[i<currentIdx?0:i===currentIdx?2:1]}</span>
-    <span style="color:${i<=currentIdx?'var(--text)':'var(--muted)'}">${s}</span>
-  </div>`).join('');
+function renderResearchSteps(currentIdx){
+  const steps = ['Read your website', 'Map who would buy', 'Draft the emails'];
+  $('researchSteps').innerHTML = steps.map((s,i) => {
+    const done = i < currentIdx, now = i === currentIdx;
+    const bg = (done || now) ? 'var(--primary)' : 'var(--line)';
+    const fg = (done || now) ? '#0b0f14' : 'var(--muted)';
+    const mark = done ? '✓' : (now ? '▸' : String(i+1));
+    return `<div style="margin:12px 0;display:flex;align-items:center;gap:10px;">
+      <span style="width:24px;height:24px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:12px;color:${fg}">${mark}</span>
+      <span style="color:${i<=currentIdx?'var(--text)':'var(--muted)'}">${s}</span>
+    </div>`;
+  }).join('');
 }
 
-async function pollResearch(){
-  if(!RESEARCH_TASK) return;
+async function pollResearch(gen){
+  if(gen !== researchGen || !RESEARCH_TASK) return;
+  polls += 1;
+  if(polls > 25){
+    $('researchErr').textContent = 'That is taking too long. Try the site again.';
+    $('startBtn').disabled = false;
+    return;
+  }
   try{
-    const r=await fetch(API+`/public/api/v1/research/status?task_id=${RESEARCH_TASK}`);
-    const d=await r.json();
-    if(!r.ok) throw new Error(d.detail||'error');
-    
-    if(d.status==='completed'){
+    const r = await fetch(API + '/public/api/v1/research/status?task_id=' + encodeURIComponent(RESEARCH_TASK));
+    const d = await r.json();
+    if(gen !== researchGen) return;
+    if(!r.ok) throw new Error(d.detail || 'Research failed');
+    if(d.status === 'error') throw new Error(d.detail || 'Research failed');
+    if(d.status === 'completed'){
+      $('startBtn').disabled = false;
       showResults(d);
-    }else{
-      setTimeout(pollResearch, 1500);
+      return;
     }
-  }catch(e){ console.error(e); setTimeout(pollResearch, 1500); }
+    renderResearchSteps(d.step === 'mapping' ? 1 : 0);
+    setTimeout(() => pollResearch(gen), 700);
+  }catch(e){
+    $('researchErr').textContent = e.message;
+    $('startBtn').disabled = false;
+  }
 }
 
 function showPhaseIndicator(current){
-  const phases=['Segments','Prospects','Emails','Payment'];
-  $('phaseIndicator').innerHTML=phases.map((p,i)=>`
+  const phases = ['Segments','People','Emails','Credits'];
+  $('phaseIndicator').innerHTML = phases.map((p,i) => `
     <div style="flex:1;text-align:center;">
-      <div style="width:32px;height:32px;margin:0 auto 6px;border-radius:50%;background:${i<current?'var(--primary)':i===current?'var(--primary)':'var(--line)'};display:flex;align-items:center;justify-content:center;color:#0b0f14;font-weight:700;font-size:13px;">${i<current?'✓':i+1}</div>
+      <div style="width:32px;height:32px;margin:0 auto 6px;border-radius:50%;background:${i<=current?'var(--primary)':'var(--line)'};display:flex;align-items:center;justify-content:center;color:${i<=current?'#0b0f14':'var(--muted)'};font-weight:700;font-size:13px;">${i<current?'✓':i+1}</div>
       <div style="font-size:12px;color:${i<=current?'var(--text)':'var(--muted)'};">${p}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-
 function goToPhase(num){
-  document.querySelectorAll('.phase').forEach(p=>p.style.display='none');
-  $('phase'+num).style.display='block';
+  document.querySelectorAll('.phase').forEach(p => p.style.display = 'none');
+  $('phase'+num).style.display = 'block';
   showPhaseIndicator(num-1);
+  if(num === 4) ensureCard();
+}
+function ensureCard(){
+  if(!stripeReady || paymentMounted) return;
+  elements.create('payment').mount('#card-element');
+  paymentMounted = true;
 }
 
 function showResults(d){
   $('researchModal').classList.remove('open');
-  window.RESULTS_DATA=d;
-  window.SELECTED_SEGMENT=null;
-  window.currentPhase=1;
-
-  // Company profile
-  $('companyProfile').innerHTML=`
+  window.RESULTS_DATA = d;
+  window.SELECTED_SEGMENT = null;
+  const initial = (d.company.name || '?').trim().charAt(0).toUpperCase() || '?';
+  const fetched = d.fetched ? 'Read from the public homepage.' : 'Could not read the live page, so this pass uses the domain.';
+  $('companyProfile').innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-      <div style="width:48px;height:48px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#0b0f14;">${d.company.name[0]}</div>
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#0b0f14;">${esc(initial)}</div>
       <div>
-        <div style="font-weight:600;font-size:18px;">${d.company.name}</div>
-        <div style="font-size:13px;color:var(--muted);">${d.company.domain}</div>
+        <div style="font-weight:600;font-size:18px;">${esc(d.company.name)}</div>
+        <div style="font-size:13px;color:var(--muted);">${esc(d.company.domain)}</div>
       </div>
     </div>
-    <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">${d.company.description}</div>
-  `;
-
-  // Segments
-  $('segmentsList').innerHTML=d.segments.map(s=>`
-    <div class="seg">
-      <div><div class="l">${s.label}</div><div class="fit">${s.fit_score}% fit</div></div>
-      <button class="big" onclick="selectSegment('${s.label.replace(/'/g,"\\'")}')" style="padding:8px 16px;font-size:13px;">Select</button>
-    </div>
-  `).join('');
-
+    <div class="company-desc">${esc(d.company.description)}</div>
+    <div class="sample-note">${esc(fetched)} Pick a group to see sample drafts.</div>`;
+  $('segmentsList').innerHTML = (d.segments || []).map(s => `
+    <div class="seg" data-id="${esc(s.id)}">
+      <div>
+        <div class="l">${esc(s.label)}</div>
+        <div class="fit">${esc(s.fit_score)}% fit</div>
+        <div class="why">${esc(s.why || '')}</div>
+      </div>
+      <button class="big pick" type="button" data-id="${esc(s.id)}">Select</button>
+    </div>`).join('');
+  $('segmentsList').querySelectorAll('button.pick').forEach(btn => {
+    btn.onclick = () => {
+      window.SELECTED_SEGMENT = btn.dataset.id;
+      $('segmentsList').querySelectorAll('.seg').forEach(el => el.classList.toggle('picked', el.dataset.id === btn.dataset.id));
+      phaseErr('');
+    };
+  });
   $('phasesModal').classList.add('open');
+  phaseErr('');
   goToPhase(1);
 }
 
-window.selectSegment=label=>{
-  window.SELECTED_SEGMENT=label;
-  document.querySelectorAll('#segmentsList button').forEach(b=>{b.style.opacity=b.textContent.includes(label)?'1':'0.5';});
+async function loadLeads(){
+  const r = await fetch(API + '/public/api/v1/research/leads?task_id=' + encodeURIComponent(RESEARCH_TASK) + '&segment_id=' + encodeURIComponent(window.SELECTED_SEGMENT));
+  const d = await r.json();
+  if(!r.ok) throw new Error(d.detail || 'Could not load this segment');
+  return d.leads || [];
+}
+
+$('nextPhase1').onclick = async () => {
+  phaseErr('');
+  if(!window.SELECTED_SEGMENT){ phaseErr('Pick a segment first.'); return; }
+  $('nextPhase1').disabled = true;
+  try{
+    const leads = await loadLeads();
+    window.CURRENT_LEADS = leads;
+    try{ sessionStorage.setItem('qr_leads', String(leads.length)); }catch(e){}
+    $('prospectsCount').textContent = leads.length ? (leads.length + ' sample contacts') : 'No sample contacts for this segment';
+    $('prospectsList').innerHTML = leads.map(l => `
+      <div class="seg">
+        <div>
+          <div class="l">${esc(l.name)}</div>
+          <div class="fit">${esc(l.role)} at ${esc(l.company)}</div>
+          <div style="font-size:12px;color:var(--muted);">${esc(l.email)}</div>
+        </div>
+      </div>`).join('');
+    goToPhase(2);
+  }catch(e){ phaseErr(e.message); }
+  finally { $('nextPhase1').disabled = false; }
 };
 
-$('nextPhase1').onclick=async()=>{
-  if(!window.SELECTED_SEGMENT){ alert('Pick a segment first'); return; }
+$('backPhase2').onclick = () => goToPhase(1);
+$('nextPhase2').onclick = async () => {
+  phaseErr('');
+  $('nextPhase2').disabled = true;
   try{
-    const r=await fetch(API+'/public/api/v1/research/leads?segment_id=1');
-    const d=await r.json();
-    const leads=d.leads||[];
-    $('prospectsCount').textContent=`Found ${leads.length} decision makers`;
-    $('prospectsList').innerHTML=leads.map((l,i)=>`
-      <div class="seg" style="margin-bottom:8px;">
-        <div><div class="l">${l.name}</div><div class="fit">${l.role} at ${l.company}</div><div style="font-size:12px;color:var(--muted);">${l.email}</div></div>
-      </div>
-    `).join('');
-  }catch(e){
-    alert('Error loading prospects: '+e.message);
-  }
-  goToPhase(2);
+    const r = await fetch(API + '/public/api/v1/research/emails?task_id=' + encodeURIComponent(RESEARCH_TASK) + '&segment_id=' + encodeURIComponent(window.SELECTED_SEGMENT));
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || 'Could not draft emails');
+    $('emailPreview').innerHTML = (d.emails || []).map(mail => `
+      <div class="mail">
+        <div class="to">To: ${esc(mail.to)} · ${mail.will_send ? 'Sends' : 'Held'}</div>
+        <div class="subj">${esc(mail.subject)}</div>
+        <div class="body">${esc(mail.body)}</div>
+        ${mail.will_send ? '' : `<div class="to">${esc(mail.hold_reason || 'Held')}</div>`}
+      </div>`).join('') || '<p class="sample-note">No drafts for this segment.</p>';
+    goToPhase(3);
+  }catch(e){ phaseErr(e.message); }
+  finally { $('nextPhase2').disabled = false; }
 };
 
-$('backPhase2').onclick=()=>goToPhase(1);
-$('nextPhase2').onclick=async()=>{
+$('backPhase3').onclick = () => goToPhase(2);
+$('nextPhase3').onclick = () => { payErr(''); goToPhase(4); };
+
+async function autoSend(){
+  if(!TOK || !RESEARCH_TASK || !window.SELECTED_SEGMENT) return null;
+  const res = await api('/public/api/v1/research/send', 'POST', {
+    task_id: RESEARCH_TASK,
+    segment_id: window.SELECTED_SEGMENT
+  });
+  return res.d;
+}
+
+async function showDash(credits){
+  $('phasesModal').classList.remove('open');
+  $('researchModal').classList.remove('open');
+  document.body.classList.add('in-app');
+  $('dash').classList.add('open');
+  $('navCta').textContent = 'New site';
+  if(typeof credits === 'number') $('balance').textContent = '$' + credits.toFixed(2);
+  const n = (window.CURRENT_LEADS || []).length;
+  $('stLeads').textContent = String(n || sessionStorage.getItem('qr_leads') || '0');
+  const company = window.RESULTS_DATA && window.RESULTS_DATA.company;
+  const sent = await autoSend();
+  if(sent && typeof sent.balance_usd === 'number') $('balance').textContent = '$' + sent.balance_usd.toFixed(2);
+  const sentN = sent && sent.sent ? sent.sent.length : 0;
+  const heldN = sent && sent.held ? sent.held.length : 0;
+  const heldWhy = sent && sent.held && sent.held[0] ? sent.held[0].reason : '';
+  const from = company ? (' for ' + company.domain) : '';
+  $('info').textContent = sent
+    ? (sentN + ' email' + (sentN === 1 ? '' : 's') + ' sent' + from + '. ' + heldN + ' held' + (heldWhy ? (': ' + heldWhy) : '.') + ' Pause a segment below any time.')
+    : 'Specific notes send for the segment you picked. Pause a segment below any time.';
+  load();
+  window.scrollTo({top:0});
+}
+
+$('cStart').onclick = async () => {
+  payErr('');
+  const email = $('cEmail').value.trim();
+  if(!email){ payErr('Add the email for this account.'); return; }
+  $('cStart').disabled = true;
+  const label = $('cStart').textContent;
+  $('cStart').textContent = 'Working…';
   try{
-    const r=await fetch(API+'/public/api/v1/research/leads?segment_id=1');
-    const d=await r.json();
-    const leads=d.leads||[];
-    window.CURRENT_LEADS=leads;
-    $('emailPreview').innerHTML=leads.map(l=>`
-      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;"><b>To:</b> ${l.email}</div>
-        <div style="font-size:13px;">Hi ${l.name.split(' ')[0]},<br/><br/>I found your company ${l.company} and saw you're ${l.role}. We help teams like yours find more leads through AI prospecting...
-        <br/><br/>— The QuantumReachly team</div>
-      </div>
-    `).join('');
-  }catch(e){
-    alert('Error loading emails: '+e.message);
-  }
-  goToPhase(3);
-};
-
-$('backPhase3').onclick=()=>goToPhase(2);
-$('nextPhase3').onclick=()=>goToPhase(4);
-
-$('cStart').onclick=async()=>{
-  if(!$('cEmail').value) { alert('Please enter your email'); return; }
-  if(!stripe || !elements) { alert('Payment system loading, try again'); return; }
-
-  $('cStart').disabled=true; $('cStart').textContent='Processing…';
-  try{
-    const {paymentMethod,error}=await stripe.createPaymentMethod({type:'card',card:elements.getElement('payment')});
-    if(error) throw new Error(error.message);
-
-    const r=await fetch(API+'/public/api/v1/onboard',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:$('cEmail').value,site_url:$('site').value,card_token:paymentMethod.id})});
-    const d=await r.json();
-    if(!r.ok) throw new Error(d.detail||'error');
-
-    if(d.status==='onboarded'){
-      TOK=d.secret; $('phasesModal').classList.remove('open'); $('dash').classList.add('open');
-      $('balance').textContent='$'+d.credits_usd.toFixed(2); load();
-    }else if(d.status==='checkout' && d.checkout_url){
-      window.location.href=d.checkout_url;
+    let cardToken = '';
+    if(stripeReady){
+      const submitted = await elements.submit();
+      if(submitted.error) throw new Error(submitted.error.message);
+      const created = await stripe.createPaymentMethod({
+        elements,
+        params: { billing_details: { email } }
+      });
+      if(created.error) throw new Error(created.error.message);
+      cardToken = created.paymentMethod.id;
     }
-  }catch(e){ alert(e.message); } finally { $('cStart').disabled=false; $('cStart').textContent='Unlock $30 →'; }
+    const r = await fetch(API + '/public/api/v1/onboard', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email, site_url: siteValue(), card_token: cardToken,
+        task_id: RESEARCH_TASK || '', segment_id: window.SELECTED_SEGMENT || ''
+      })
+    });
+    const d = await r.json();
+    if(!r.ok || d.status === 'error') throw new Error(d.detail || d.message || 'Could not open the account');
+    if(d.status === 'onboarded'){
+      TOK = d.secret;
+      showDash(typeof d.credits_usd === 'number' ? d.credits_usd : 30);
+    }else if(d.status === 'checkout' && d.checkout_url){
+      window.location.href = d.checkout_url;
+    }else{
+      throw new Error(d.message || 'Could not open the account');
+    }
+  }catch(e){ payErr(e.message); }
+  finally { $('cStart').disabled = false; $('cStart').textContent = label; }
 };
 
 (function(){
-  const params=new URLSearchParams(window.location.search);
-  if(params.get('setup')==='success'){
-    const secret=params.get('secret');
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('setup') === 'success'){
+    const secret = params.get('secret');
     if(secret){
-      TOK=secret;
-      $('phasesModal').classList.remove('open');
-      $('dash').classList.add('open');
-      load();
-      history.replaceState({},'',window.location.pathname);
+      TOK = secret;
+      showDash();
+      history.replaceState({}, '', window.location.pathname);
     }
+  }
+  if(params.get('setup') === 'cancel'){
+    payErr('Card setup was cancelled. You can try again.');
+    history.replaceState({}, '', window.location.pathname);
   }
 })();
 
-async function api(p,m=null,body=null){
-  const h={}; if(TOK) h['Authorization']='Bearer '+TOK; if(body) h['Content-Type']='application/json';
-  const r=await fetch(API+p,{method:m||'GET',headers:h,body:body?JSON.stringify(body):null});
-  return {ok:r.ok, d:r.status===200?await r.json():null};
+async function api(p, m=null, body=null){
+  const h = {};
+  if(TOK) h['Authorization'] = 'Bearer ' + TOK;
+  if(body) h['Content-Type'] = 'application/json';
+  const r = await fetch(API + p, {method: m || 'GET', headers: h, body: body ? JSON.stringify(body) : null});
+  let data = null;
+  try{ data = await r.json(); }catch(e){ data = null; }
+  return {ok: r.ok, d: data};
 }
 
 async function load(){
-  const bal=await api('/public/api/v1/billing/balance');
-  if(bal.d) $('balance').textContent='$'+bal.d.balance_usd.toFixed(2);
-  const c=await api('/public/api/v1/autogtm/campaigns');
-  const cam=c.d&&c.d.campaigns||[];
-  $('stSent').textContent=cam.reduce((a,b)=>a+b.emails_sent,0);
-  $('stMeets').textContent=cam.reduce((a,b)=>a+b.warm_leads,0);
-  const rail=$('rail'); rail.innerHTML='';
-  cam.forEach(seg=>{
-    const el=document.createElement('div'); el.className='seg';
-    const status=seg.status==='Paused'?`<span class="pill pause">Paused</span>`:`<span class="pill">${seg.status}</span>`;
-    el.innerHTML=`<div><div class="l">${seg.name||'Segment'}</div><div class="fit">${seg.daily_limit_usd?'$'+seg.daily_limit_usd+'/day':''}</div></div>${status}`;
+  const bal = await api('/public/api/v1/billing/balance');
+  if(bal.d && typeof bal.d.balance_usd === 'number') $('balance').textContent = '$' + bal.d.balance_usd.toFixed(2);
+  const c = await api('/public/api/v1/autogtm/campaigns');
+  const cam = (c.d && c.d.campaigns) || [];
+  $('stSent').textContent = cam.reduce((a,b) => a + (b.emails_sent || 0), 0);
+  $('stMeets').textContent = cam.reduce((a,b) => a + (b.warm_leads || 0), 0);
+  const rail = $('rail');
+  rail.innerHTML = '';
+  if(!cam.length){
+    rail.innerHTML = '<p class="sample-note">No segments on this account yet.</p>';
+    return;
+  }
+  cam.forEach(seg => {
+    const el = document.createElement('div');
+    el.className = 'seg';
+    const running = seg.status === 'Scaling';
+    const pill = running ? 'Pause' : (seg.status === 'Paused' ? 'Paused · resume' : 'Start');
+    el.innerHTML = `<div><div class="l">${esc(seg.name || 'Segment')}</div><div class="fit">${seg.daily_limit_usd ? ('$' + seg.daily_limit_usd + '/day cap') : ''}</div></div><button class="pill${running ? '' : ''}" type="button">${esc(pill)}</button>`;
+    if(seg.status === 'Paused') el.querySelector('button').classList.add('pause');
+    el.querySelector('button').onclick = async () => {
+      const action = running ? 'stop' : 'start';
+      await api('/public/api/v1/autogtm/campaigns/' + seg.id + '/' + action, 'POST');
+      load();
+    };
     rail.appendChild(el);
   });
 }
 
-$('cancelLink').onclick=async e=>{e.preventDefault();
+$('cancelLink').onclick = async e => {
+  e.preventDefault();
+  if(!TOK){ return; }
   if(confirm('Cancel the 48h auto-charge? You keep your current credits.')){
-    await api('/public/api/v1/onboard/cancel?secret='+TOK); alert('Auto-charge cancelled.');
+    await api('/public/api/v1/onboard/cancel?secret=' + encodeURIComponent(TOK), 'POST');
+    $('info').textContent = 'Auto-charge is cancelled. Credits already on the account stay there.';
   }
 };
 </script>
