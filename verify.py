@@ -79,5 +79,22 @@ st, emails = http('GET', f'/public/api/v1/research/emails?task_id={task}&segment
 body = ((emails.get('emails') or [{}])[0].get('body') or '')
 check("preview emails", st, 200, f"{len(body)} chars")
 ok = ok and 'example.com' in body
+will_send = all(m.get('will_send') for m in emails.get('emails') or [])
+print(f"{'PASS' if will_send else 'FAIL'}  sensible notes are marked to send")
+ok = ok and will_send
+
+st, acct = http('POST', '/public/api/v1/onboard', {
+    'email': f'send{int(time.time())}@example.com',
+    'site_url': 'https://example.com',
+    'card_token': 't',
+    'task_id': task,
+    'segment_id': seg_id,
+})
+check("onboard for send", st, 200)
+st, sent = http('POST', '/public/api/v1/research/send', {'task_id': task, 'segment_id': seg_id}, tok=acct.get('secret'))
+n_sent = len(sent.get('sent') or [])
+n_held = len(sent.get('held') or [])
+check("auto send", st, 200, f"sent={n_sent} held={n_held} usd={sent.get('balance_usd')}")
+ok = ok and n_sent >= 1 and n_held == 0 and abs((sent.get('balance_usd') or 0) - (30 - 0.03 * n_sent)) < 0.001
 
 print("\nRESULT:", "ALL PASS ✓" if ok else "FAILED ✗")

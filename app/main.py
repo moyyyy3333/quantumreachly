@@ -20,9 +20,11 @@ import sqlite3
 import stripe
 
 try:
-    from .research import build_preview, draft_email, normalize_site
+    from .research import build_preview, draft_email, email_makes_sense, normalize_site
 except ImportError:  # running as a script
-    from research import build_preview, draft_email, normalize_site
+    from research import build_preview, draft_email, email_makes_sense, normalize_site
+
+EMAIL_PRICE_USD = 0.03
 
 DB = Path(__file__).parent / "gtm.db"
 app = FastAPI(title="GTM", version="1.0.0")
@@ -367,11 +369,69 @@ def research_emails(segment_id: str = "1", task_id: str = ""):
     segment = next((s for s in task["segments"] if s["id"] == str(segment_id)), None)
     if not segment:
         raise HTTPException(404, "unknown segment")
-    emails = [
-        draft_email(task["company"], segment, lead)
-        for lead in task.get("leads", {}).get(segment["id"], [])
-    ]
+    emails = []
+    for lead in task.get("leads", {}).get(segment["id"], []):
+        draft = draft_email(task["company"], segment, lead)
+        ok, reason = email_makes_sense(
+            task["company"], segment, lead, draft, fetched=bool(task.get("fetched"))
+        )
+        draft["will_send"] = ok
+        draft["hold_reason"] = reason
+        emails.append(draft)
     return {"emails": emails}
+
+class SendResearchBody(BaseModel):
+    task_id: str
+    segment_id: str
+
+@app.post("/public/api/v1/research/send")
+def research_send(b: SendResearchBody, user=Depends(get_user)):
+    """Send every note that is specific. Hold the rest. No separate approval step."""
+    task = _get_task(b.task_id)
+    if not task or task.get("status") != "completed":
+        raise HTTPException(404, "research is not ready")
+    segment = next((s for s in task["segments"] if s["id"] == str(b.segment_id)), None)
+    if not segment:
+        raise HTTPException(404, "unknown segment")
+    sent, held = [], []
+    with db() as c:
+        for lead in task.get("leads", {}).get(segment["id"], []):
+            draft = draft_email(task["company"], segment, lead)
+            ok, reason = email_makes_sense(
+                task["company"], segment, lead, draft, fetched=bool(task.get("fetched"))
+            )
+            if not ok:
+                held.append({"to": draft["to"], "subject": draft["subject"], "reason": reason})
+                continue
+            already = c.execute(
+                "SELECT id FROM sends WHERE user_id=? AND to_email=?",
+                (user["id"], draft["to"]),
+            ).fetchone()
+            if already:
+                sent.append({"to": draft["to"], "subject": draft["subject"], "already": True})
+                continue
+            balance = c.execute(
+                "SELECT credits_usd FROM users WHERE id=?", (user["id"],)
+            ).fetchone()
+            if not balance or balance["credits_usd"] < EMAIL_PRICE_USD:
+                held.append({"to": draft["to"], "subject": draft["subject"], "reason": "Not enough credits."})
+                continue
+            c.execute(
+                "UPDATE users SET credits_usd = credits_usd - ? WHERE id=?",
+                (EMAIL_PRICE_USD, user["id"]),
+            )
+            c.execute(
+                "INSERT INTO sends(user_id, to_email, credits, sent_at, thread) VALUES(?,?,?,?,?)",
+                (user["id"], draft["to"], EMAIL_PRICE_USD, time.time(), draft["subject"] + "\n\n" + draft["body"]),
+            )
+            c.execute(
+                "UPDATE campaigns SET emails_sent = emails_sent + 1, cost = cost + ?, status='Scaling' "
+                "WHERE user_id=? AND segment_id=(SELECT id FROM segments WHERE user_id=? AND label=? LIMIT 1)",
+                (EMAIL_PRICE_USD, user["id"], user["id"], segment["label"]),
+            )
+            sent.append({"to": draft["to"], "subject": draft["subject"], "already": False})
+    fresh = _credits(user["id"])
+    return {"sent": sent, "held": held, "balance_usd": fresh}
 
 # ---------- Search (mirror Explee; our engine: seeded demo over local DB) ----------
 @app.post("/public/api/v1/search/companies")

@@ -281,6 +281,9 @@ def sample_leads(segment: dict) -> list[dict]:
     return leads
 
 
+_PLACEHOLDER = re.compile(r"\{[a-z0-9_]+\}|\[[^\]]{0,40}\]|lorem ipsum|\btodo\b|xxx+", re.I)
+
+
 def draft_email(company: dict, segment: dict, lead: dict) -> dict:
     first = lead["name"].split()[0]
     subject = f"{first}, a note from {company['name']}"
@@ -295,6 +298,43 @@ def draft_email(company: dict, segment: dict, lead: dict) -> dict:
         f"— {company['name']}"
     )
     return {"to": lead["email"], "name": lead["name"], "subject": subject, "body": body}
+
+
+def email_makes_sense(company: dict, segment: dict, lead: dict, draft: dict, *, fetched: bool) -> tuple[bool, str]:
+    """A note sends only when it is about this site and this person.
+
+    A generic line, a placeholder, or a homepage we could not read stays unsent.
+    """
+    subject = (draft.get("subject") or "").strip()
+    body = (draft.get("body") or "").strip()
+    description = (company.get("description") or "").strip()
+    first = (lead.get("name") or "").split(" ")[0]
+    their_company = (lead.get("company") or "").strip()
+    sender = (company.get("name") or "").strip()
+    domain = (company.get("domain") or "").strip()
+    label = (segment.get("label") or "").strip()
+    if not fetched or not description or description == f"{sender} is the company behind {domain}.":
+        return False, "The homepage was not readable, so this note would be generic."
+    if len(body) < 80 or len(subject) < 8:
+        return False, "The note is too short to say what the company does."
+    if _PLACEHOLDER.search(subject + "\n" + body):
+        return False, "The note still has a placeholder."
+    if first and first not in body:
+        return False, "The note does not name the person."
+    if their_company and their_company not in body:
+        return False, "The note does not name their company."
+    if sender and sender not in body:
+        return False, "The note does not say who it is from."
+    if domain and domain not in body:
+        return False, "The note does not include the site it came from."
+    if label and label.lower() not in body.lower():
+        return False, "The note does not say why this group was chosen."
+    if description not in body:
+        return False, "The note does not use what the homepage actually says."
+    address = (draft.get("to") or "").strip().lower()
+    if "@" not in address or not address.endswith(".example"):
+        return False, "This address is outside the sample inboxes, so it was not sent."
+    return True, ""
 
 
 def build_preview(site_url: str) -> dict:
