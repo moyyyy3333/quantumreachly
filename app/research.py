@@ -227,9 +227,15 @@ def _has_word(text: str, word: str) -> bool:
 def first_paragraphs(html: str) -> str:
     parts: list[str] = []
     for match in re.finditer(r"(?is)<p[^>]*>(.*?)</p>", html or ""):
-        bit = clean_text(match.group(1), 220)
-        if bit:
-            parts.append(bit)
+        inner = re.sub(
+            r"(?is)<a\b[^>]*>\s*(learn more|read more|click here|more information)\s*</a>",
+            " ",
+            match.group(1),
+        )
+        bit = clean_text(inner, 220)
+        if not bit or bit.lower() in {"learn more", "read more", "click here", "more information"}:
+            continue
+        parts.append(bit)
         if len(" ".join(parts)) > 180:
             break
     return clean_text(" ".join(parts), 220)
@@ -281,9 +287,9 @@ def draft_email(company: dict, segment: dict, lead: dict) -> dict:
     body = (
         f"Hi {first},\n\n"
         f"{company['description']}\n\n"
-        f"I am writing from {company['name']} ({company['domain']}) because {lead['company']} sits in the "
-        f"{segment['label'].lower()} group we sell to. You are the {lead['role'].lower()}, "
-        f"so I wanted you to see it first.\n\n"
+        f"I am writing from {company['name']} ({company['domain']}) because {lead['company']} "
+        f"is the kind of account we had in mind for {segment['label'].lower()}. "
+        f"You are the {lead['role'].lower()}, so I wanted you to see it first.\n\n"
         f"{segment['why']}\n\n"
         f"If this is relevant I can send a shorter version. If it is not, I will close the loop.\n\n"
         f"— {company['name']}"
