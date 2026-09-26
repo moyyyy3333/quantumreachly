@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end verify: dashboard + onboard -> balance -> campaigns -> segments.
 One runner that follows the data across every edge so a failure is caught at the exact hop."""
-import json, urllib.request, urllib.error
+import json, time, urllib.request, urllib.error
 B = 'http://127.0.0.1:8080'
 
 def http(method, path, body=None, tok=None, raw=False):
@@ -50,5 +50,34 @@ check("search companies", st, 200)
 # 6. topup then balance
 st, tp = http('POST', '/public/api/v1/billing/topup', {'amount_usd':10}, tok=tok)
 check("topup", st, 200, f"usd={tp.get('balance_usd')}")
+
+# 7. research follows the submitted site, and refuses local targets
+st, blocked = http('POST', '/public/api/v1/research/start', {'site_url':'http://127.0.0.1/admin'})
+check("block local research", st, 400, str(blocked.get('detail',''))[:60])
+
+st, started = http('POST', '/public/api/v1/research/start', {'site_url':'example.com'})
+check("research start", st, 200, started.get('task_id',''))
+task = started.get('task_id')
+preview = {}
+for _ in range(40):
+    st, preview = http('GET', '/public/api/v1/research/status?task_id=' + task)
+    if preview.get('status') in ('completed', 'error'):
+        break
+    time.sleep(0.5)
+check("research status", st, 200, preview.get('status',''))
+domain = (preview.get('company') or {}).get('domain','')
+ok = ok and domain == 'example.com' and preview.get('status') == 'completed'
+print(f"{'PASS' if domain=='example.com' and preview.get('status')=='completed' else 'FAIL'}  research domain  [{domain}]")
+segs = preview.get('segments') or []
+seg_id = segs[0]['id'] if segs else '1'
+st, leads = http('GET', f'/public/api/v1/research/leads?task_id={task}&segment_id={seg_id}')
+sample = (leads.get('leads') or [{}])[0].get('email','')
+check("preview leads", st, 200, sample)
+ok = ok and sample.endswith('.example')
+print(f"{'PASS' if sample.endswith('.example') else 'FAIL'}  sample inbox stays on .example")
+st, emails = http('GET', f'/public/api/v1/research/emails?task_id={task}&segment_id={seg_id}')
+body = ((emails.get('emails') or [{}])[0].get('body') or '')
+check("preview emails", st, 200, f"{len(body)} chars")
+ok = ok and 'example.com' in body
 
 print("\nRESULT:", "ALL PASS ✓" if ok else "FAILED ✗")

@@ -11,14 +11,18 @@ Monetization (disclosed at signup):
 from __future__ import annotations
 import time, uuid, sqlite3, json, threading, os
 from pathlib import Path
-from typing import Optional, Any
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Header, Request
-from fastapi.responses import FileResponse, HTMLResponse
-from pathlib import Path
-from pydantic import BaseModel, Field
+from typing import Optional
+from fastapi import FastAPI, HTTPException, Depends, Header, Request
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from contextlib import contextmanager
 import sqlite3
 import stripe
+
+try:
+    from .research import build_preview, draft_email, normalize_site
+except ImportError:  # running as a script
+    from research import build_preview, draft_email, normalize_site
 
 DB = Path(__file__).parent / "gtm.db"
 app = FastAPI(title="GTM", version="1.0.0")
@@ -125,6 +129,8 @@ class SignupBody(BaseModel):
     email: str
     site_url: str
     card_token: str = ""  # Optional, Stripe Checkout handles card collection
+    task_id: str = ""
+    segment_id: str = ""
 
 # ---------- Auth ----------
 def get_user(authorization: str = Header(default="")):
@@ -135,6 +141,25 @@ def get_user(authorization: str = Header(default="")):
     if not u:
         raise HTTPException(401, "bad token")
     return dict(u)
+
+def _seed_campaigns(c, uid: int, task_id: str):
+    """Campaigns follow the site the person just researched, when that preview is still in memory."""
+    task = _get_task(task_id) if task_id else None
+    if task and task.get("status") == "completed":
+        rows = [(s["label"], int(s["fit_score"])) for s in task["segments"]]
+    else:
+        rows = [("Event planners/designers", 92), ("Catering & venues", 85),
+                ("Wedding/event studios", 88), ("Corporate buyers", 74)]
+    for label, score in rows:
+        c.execute(
+            "INSERT INTO segments(user_id,label,fit_score,status,definition) VALUES(?,?,?,'Ready','site')",
+            (uid, label, score),
+        )
+        c.execute(
+            "INSERT INTO campaigns(user_id,segment_id,status,daily_limit_usd) "
+            "VALUES(?,(SELECT id FROM segments WHERE user_id=? AND label=?),'Ready',20)",
+            (uid, uid, label),
+        )
 
 # ---------- Onboarding (the model) ----------
 @app.post("/public/api/v1/onboard/cancel")
@@ -160,36 +185,50 @@ def onboard(b: SignupBody):
                         "VALUES(?,?,30,?,?,?)",
                         (b.email, b.site_url, now, now + 48*3600, secret))
         uid = cur.lastrowid
-        for label, score in [("Event planners/designers", 92), ("Catering & venues", 85),
-                             ("Wedding/event studios", 88), ("Corporate buyers", 74)]:
-            c.execute("INSERT INTO segments(user_id,label,fit_score,status,definition) VALUES(?,?,?,'Ready','demo')",
-                      (uid, label, score))
-            c.execute("INSERT INTO campaigns(user_id,segment_id,status,daily_limit_usd) VALUES(?,(SELECT id FROM segments WHERE user_id=? AND label=?),'Ready',20)",
-                      (uid, uid, label))
+        _seed_campaigns(c, uid, b.task_id)
 
-    if b.card_token:
+    onboarded = {"status": "onboarded", "secret": secret, "credits_usd": 30.0,
+                 "trial_ends_at": now + 48 * 3600}
+
+    # Card capture only runs when Stripe is configured. Local and smoke runs
+    # still receive the starter credits so the review queue can be opened.
+    if b.card_token and stripe.api_key:
         try:
-            pm = stripe.PaymentMethod.create(type="card", card={"token": b.card_token})
+            if b.card_token.startswith("pm_"):
+                stripe.PaymentMethod.retrieve(b.card_token)
+                saved = b.card_token
+            else:
+                saved = stripe.PaymentMethod.create(
+                    type="card", card={"token": b.card_token}
+                ).id
             with db() as c:
-                c.execute("UPDATE users SET card_token=? WHERE secret=?", (pm.id, secret))
-            return {"status":"onboarded","secret":secret,"credits_usd":30.0,"trial_ends_at":now+48*3600}
-        except Exception as e:
-            return {"status":"error","message":str(e)}
+                c.execute("UPDATE users SET card_token=? WHERE secret=?", (saved, secret))
+            return onboarded
+        except Exception:
+            return {"status": "error", "message": "Card could not be saved. Check the details and try again."}
 
-    try:
-        session = stripe.checkout.Session.create(
-            mode="setup",
-            customer_email=b.email,
-            payment_method_types=["card"],
-            success_url=f"{FRONTEND_URL}/?setup=success&secret={secret}",
-            cancel_url=f"{FRONTEND_URL}/?setup=cancel",
-            metadata={"user_secret": secret, "user_id": str(uid)},
-        )
-        return {"status": "checkout", "checkout_url": session.url, "secret": secret}
-    except Exception as e:
-        return {"status": "onboarded", "secret": secret, "credits_usd": 30.0,
-                "trial_ends_at": now+48*3600,
-                "notice": f"Checkout failed ({e}). Use /public/api/v1/onboard/checkout?secret={secret} to retry."}
+    if not stripe.api_key:
+        if b.card_token:
+            with db() as c:
+                c.execute("UPDATE users SET card_token=? WHERE secret=?", (b.card_token, secret))
+        return onboarded
+
+    if not b.card_token:
+        try:
+            session = stripe.checkout.Session.create(
+                mode="setup",
+                customer_email=b.email,
+                payment_method_types=["card"],
+                success_url=f"{FRONTEND_URL}/?setup=success&secret={secret}",
+                cancel_url=f"{FRONTEND_URL}/?setup=cancel",
+                metadata={"user_secret": secret, "user_id": str(uid)},
+            )
+            return {"status": "checkout", "checkout_url": session.url, "secret": secret}
+        except Exception:
+            onboarded["notice"] = "Checkout is unavailable. Your credits are unlocked — retry the card from the dashboard."
+            return onboarded
+
+    return onboarded
 
 @app.get("/public/api/v1/onboard/checkout")
 def checkout_retry(secret: str):
@@ -239,39 +278,100 @@ def get_config():
 class ResearchStartBody(BaseModel):
     site_url: str
 
-# ---------- Research flow (Explee-style) ----------
+_tasks: dict[str, dict] = {}
+_task_order: list[str] = []
+_task_lock = threading.Lock()
+
+def _put_task(task_id: str, payload: dict):
+    with _task_lock:
+        if task_id not in _tasks:
+            _task_order.append(task_id)
+            while len(_task_order) > 200:
+                _tasks.pop(_task_order.pop(0), None)
+        _tasks[task_id] = payload
+
+def _get_task(task_id: str) -> Optional[dict]:
+    with _task_lock:
+        task = _tasks.get(task_id)
+        return dict(task) if task else None
+
+def _research_worker(task_id: str, site: str):
+    try:
+        _put_task(task_id, {"status": "running", "step": "mapping"})
+        _put_task(task_id, build_preview(site))
+    except ValueError as exc:
+        _put_task(task_id, {"status": "error", "detail": str(exc)})
+    except Exception:
+        _put_task(task_id, {"status": "error", "detail": "Research failed"})
+
+def _public_research(task: dict) -> dict:
+    if task.get("status") != "completed":
+        return {
+            "status": task.get("status", "running"),
+            "step": task.get("step", "reading"),
+            "detail": task.get("detail", ""),
+        }
+    return {
+        "status": "completed",
+        "fetched": task.get("fetched", False),
+        "company": task["company"],
+        "segments": task["segments"],
+        "sample_leads": [],
+    }
+
+# ---------- Research flow ----------
 @app.post("/public/api/v1/research/start")
 def research_start(body: ResearchStartBody):
-    """Start research - no auth needed for initial flow."""
+    """Start research from a public website. No account required."""
+    try:
+        site = normalize_site(body.site_url)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
     task_id = uuid.uuid4().hex
+    _put_task(task_id, {"status": "running", "step": "reading"})
+    threading.Thread(target=_research_worker, args=(task_id, site), daemon=True).start()
     return {"task_id": task_id, "status": "started"}
 
 @app.get("/public/api/v1/research/status")
 def research_status(task_id: str):
-    """Poll research status - no auth needed for initial flow."""
-    return {
-        "status": "completed",
-        "company": {
-            "name": "HireHuman",
-            "domain": "hirehuman.fyi",
-            "description": "A job platform where AI posts tasks requiring human skills like physical presence and emotions, paying workers for things machines can't do.",
-            "region": "US"
-        },
-        "segments": [
-            {"label": "Event planners/designers", "fit_score": 92},
-            {"label": "Catering & venues", "fit_score": 85},
-            {"label": "Wedding/event studios", "fit_score": 88},
-            {"label": "Corporate buyers", "fit_score": 74}
-        ],
-        "sample_leads": []
-    }
+    """Poll research. Completed payloads describe the site the caller submitted."""
+    task = _get_task(task_id)
+    if not task:
+        raise HTTPException(404, "unknown task")
+    return _public_research(task)
 
 @app.get("/public/api/v1/research/leads")
-def research_leads(segment_id: int = 1):
-    """Fetch leads for a segment - real data from DB."""
+def research_leads(segment_id: str = "1", task_id: str = ""):
+    """Preview people for a segment. Task results are samples; legacy calls read the demo table."""
+    if task_id:
+        task = _get_task(task_id)
+        if not task or task.get("status") != "completed":
+            raise HTTPException(404, "research is not ready")
+        return {"leads": task.get("leads", {}).get(str(segment_id), [])}
+    try:
+        sid = int(segment_id)
+    except ValueError:
+        sid = 1
     with db() as c:
-        rows = c.execute("SELECT name, role, company, email FROM leads WHERE segment_id=?", (segment_id,)).fetchall()
+        rows = c.execute(
+            "SELECT name, role, company, email FROM leads WHERE segment_id=?", (sid,)
+        ).fetchall()
     return {"leads": [dict(r) for r in rows]}
+
+@app.get("/public/api/v1/research/emails")
+def research_emails(segment_id: str = "1", task_id: str = ""):
+    """Drafts the caller can read before anything is sent."""
+    task = _get_task(task_id)
+    if not task or task.get("status") != "completed":
+        raise HTTPException(404, "research is not ready")
+    segment = next((s for s in task["segments"] if s["id"] == str(segment_id)), None)
+    if not segment:
+        raise HTTPException(404, "unknown segment")
+    emails = [
+        draft_email(task["company"], segment, lead)
+        for lead in task.get("leads", {}).get(segment["id"], [])
+    ]
+    return {"emails": emails}
 
 # ---------- Search (mirror Explee; our engine: seeded demo over local DB) ----------
 @app.post("/public/api/v1/search/companies")
