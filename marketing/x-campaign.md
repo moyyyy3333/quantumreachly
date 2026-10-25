@@ -226,9 +226,9 @@ We read the public page you pasted. Title and description. That is the input. If
 
 Two weeks of the same offer, because the offer is the product:
 
-Paste the site. Read the queue. Approve, or don't.
+Paste the site. Read the drafts. Specific notes send. Vague ones stay held.
 
-$30 to start. $0 today. $0.03 when you send.
+$30 to start. $0 today. $0.03 when a note sends.
 
 https://quantumreachly.onrender.com/?utm_source=x&utm_medium=social&utm_campaign=launch
 
